@@ -1,0 +1,1481 @@
+
+1. [LOW] Порахуйте загальну кількість подій і кількість унікальних користувачів (user_pseudo_id) за весь період. 
+
+
+select count(*) as all_events, count(distinct user_pseudo_id) as cout_d_users from events
+
+8456963	244093
+
+2. [LOW] Виведіть кількість подій кожного типу (event_name), відсортувавши за спаданням. 
+
+select event_name, count(*) as all_events from events
+group by event_name 
+order by all_events DESC
+
+play_click	3644077
+screen_view_custom	2698839
+session_start	828327
+catfish_display	729777
+mainpage_banner_show	327600
+pop_up_display	153049
+vod_watchlist_add	18347
+login_success	15253
+first_open	15179
+thank_you_page_open	12260
+pop_up_click	5312
+catfish_click	4769
+mainpage_banner_click	2763
+age_verification_click	1411
+
+
+3 low lПорахуйте кількість унікальних активних користувачів за кожен день (DAU). 
+
+select event_date , count(distinct user_pseudo_id) as count_d_users from events
+group by event_date 
+order by event_date
+
+2026-06-02	85011
+2026-06-03	83201
+2026-06-04	88882
+2026-06-05	77266
+2026-06-06	83947
+2026-06-07	94505
+
+
+4  [LOW] Визначте частку подій з телефонів і планшетів (category) у відсотках від загальної кількості. 
+ 
+SELECT 
+    category, 
+    COUNT(category) AS device_count,
+    ROUND(COUNT(category) * 100.0 / SUM(COUNT(category)) OVER(), 2) || '%' AS device_percent
+FROM events
+GROUP BY category
+
+mobile	7547232	89.24%
+tablet	909731	10.76%
+
+5 5. [LOW] Виведіть топ-10 країн за кількістю унікальних користувачів. 
+
+select country , count(distinct user_pseudo_id) as count_d_users from events
+group by country 
+order by 2 desc
+limit 10
+
+
+country	count_d_users
+Ukraine	202549
+Poland	11909
+Germany	9118
+Czechia	4568
+United States	2696
+United Kingdom	2671
+Netherlands	2052
+Spain	1490
+Indonesia	1241
+France	1144
+
+
+6 [LOW] Порахуйте загальну кількість переглядів контенту (play_click) та середню кількість переглядів за день.
+
+SELECT 
+    SUM(daily_clicks) AS total_clicks,
+    ROUND(AVG(daily_clicks),2) AS avg_clicks_per_day
+FROM (
+    SELECT 
+        event_date, 
+        COUNT(*) AS daily_clicks
+    FROM events
+    WHERE event_name = 'play_click'
+    GROUP BY event_date
+) AS calculation
+
+3644077	607346.17
+
+7.  [LOW] Порахуйте кількість подій за кожен день тижня. 
+
+SELECT 
+    CASE strftime('%w', event_date)
+        WHEN '0' THEN 'Неділя'
+        WHEN '1' THEN 'Понеділок'
+        WHEN '2' THEN 'Вівторок'
+        WHEN '3' THEN 'Середа'
+        WHEN '4' THEN 'Четвер'
+        WHEN '5' THEN 'П'
+        WHEN '6' THEN 'Субота'
+    END AS day_name,
+    COUNT(*) AS event_count
+FROM events
+GROUP BY strftime('%w', event_date)
+ORDER BY (strftime('%w', event_date) + 6) % 7;
+
+Вівторок	1391429
+Середа	1377576
+Четвер	1475962
+П	1211658
+Субота	1344985
+Неділя	1655353
+
+
+8 [MEDIUM] Визначте годину доби, у яку відбувається найбільше подій (на основі event_datetime). 
+
+SELECT 
+    strftime('%H', event_datetime) AS peak_hour,
+    COUNT(*) AS event_count
+FROM events
+GROUP BY peak_hour
+ORDER BY event_count DESC
+LIMIT 1
+
+18	716112
+
+
+
+
+9. [MEDIUM] Побудуйте розподіл переглядів (play_click) по 24 годинах доби. 
+
+SELECT 
+    strftime('%H', event_datetime) AS hour_of_day,
+    COUNT(*) AS play_clicks_count
+FROM events
+WHERE event_name = 'play_click'
+GROUP BY hour_of_day
+ORDER BY hour_of_day ASC
+
+00	32860
+01	22683
+02	21465
+03	34351
+04	58876
+05	81469
+06	110679
+07	137707
+08	156263
+09	175351
+10	194110
+11	199260
+12	204988
+13	226222
+14	229588
+15	222627
+16	247520
+17	274971
+18	295799
+19	281771
+20	173337
+21	138113
+22	78347
+23	45720
+
+
+10. [LOW] Порахуйте кількість нових користувачів (first_open) за кожен день.
+
+select event_date  , count(distinct user_pseudo_id) as count_new_users from events
+where event_name ='first_open'
+group by event_date 
+order by 1 
+
+2026-06-02	2422
+2026-06-03	2343
+2026-06-04	3378
+2026-06-05	1930
+2026-06-06	2261
+2026-06-07	2842
+
+11. [MEDIUM] Для кожного користувача знайдіть дату першої та останньої події і кількість днів, протягом яких він був активним. 
+
+
+SELECT
+    user_pseudo_id,
+    MIN(event_date) AS first_event_date,
+    MAX(event_date) AS last_event_date,
+    COUNT(DISTINCT event_date) AS active_days_count
+FROM events
+GROUP BY user_pseudo_id
+LIMIT 10;z
+
+0000085E55D44C66AB4B385D033E5387	2026-06-02	2026-06-04	3
+00002C0EFB264320971234AC547A369F	2026-06-03	2026-06-06	4
+00007B63A3FE4190B890400FD4973B97	2026-06-03	2026-06-03	1
+0000CADBE7C84FFF8090398709F6DC80	2026-06-02	2026-06-02	1
+00019BF643EC42E6AFB9094969A21E4E	2026-06-06	2026-06-06	1
+0001D9E0DC8C46148C07C67BF5643BEE	2026-06-02	2026-06-07	6
+0001EC222B3445EB9FACC43EC6843084	2026-06-03	2026-06-03	1
+0001F545785A44769671BCE2DCFA4C4C	2026-06-04	2026-06-07	4
+00025E452B874E869C41A50CE203C940	2026-06-04	2026-06-06	3
+00027A15647B49B09E04A1ECC01C8EED	2026-06-06	2026-06-07	2
+
+12. [LOW] Виведіть топ-15 одиниць контенту (asset_id) за кількістю переглядів і додайте кількість унікальних глядачів кожної. 
+
+SELECT 
+    asset_id,
+    COUNT(*) AS total_views,
+    COUNT(DISTINCT user_pseudo_id) AS unique_viewers
+FROM events
+WHERE event_name = 'play_click' AND asset_id IS NOT NULL
+GROUP BY asset_id
+ORDER BY total_views DESC
+LIMIT 15
+
+55efdb73e4b0781039bc055f	245608	23141
+55efdb73e4b0781039bc0544	111216	21425
+68fb631b4eb468b99819f75b	77276	17029
+63a1cdb84c3452c24a804dfd	74470	23145
+55efdb73e4b0781039bc0487	74054	16345
+63a1cebb4c3452c24a84352f	63868	16372
+5f7482c51774d4de8a615eeb	59410	8887
+55efdb77e4b0781039bc0ec5	59216	6407
+55efdb73e4b0781039bc046c	53510	14069
+55efdb73e4b0781039bc04d8	34585	9022
+6508533a5194ee6d755fe9d5	28425	2812
+69f1fb515a14d0b08e704f9b	20243	3929
+69edf8f7f7d4dc51d973ba6b	19649	4463
+6a16bbbbf3f44b634d9f8998	19187	2408
+678a9c3cb41478cfe9032052	19123	3923
+
+
+
+
+
+13. [LOW] Виведіть топ-10 версій застосунку (app_info_version) за кількістю користувачів. 
+
+SELECT
+    app_info_version,
+    COUNT(*) AS count_users,
+    COUNT(DISTINCT user_pseudo_id) AS unique_users
+FROM events
+WHERE app_info_version IS NOT NULL
+GROUP BY app_info_version
+ORDER BY unique_users DESC
+LIMIT 10;
+
+3.1.6	3295680	142006
+3.1	157325	6780
+3.0	50930	2209
+2.89	34608	1384
+3.1.5	22289	1027
+2.88	21674	956
+2.87	10027	429
+2.85.2	9973	530
+2.86	7588	500
+2.84	3991	249
+
+
+14. [MEDIUM] Виведіть перелік країн, у яких був щонайменше один first_open. 
+
+SELECT 
+    country,
+    COUNT(DISTINCT user_pseudo_id) AS unique_users
+FROM events
+WHERE event_name = 'first_open'
+GROUP BY country
+having COUNT(DISTINCT user_pseudo_id)>=1
+ORDER BY 2 DESC
+limit 10
+
+Ukraine	12153
+Poland	693
+Germany	531
+Czechia	254
+United States	200
+United Kingdom	128
+Netherlands	121
+Spain	90
+Italy	73
+Slovakia	62
+
+15. [LOW] Виведіть топ-5 користувачів за загальною кількістю подій. 
+
+SELECT 
+    user_pseudo_id,
+    COUNT(*) AS count_views
+FROM events
+GROUP BY user_pseudo_id
+ORDER BY 2 DESC
+limit 5
+
+6DC6DACFFAC34DD195C458D0F340B4E8	2386
+5E86D474937141D9BB792AD38AAB6B02	2141
+F9C6DF190FE74B19A362FC027B8DC55A	2129
+106F217200404FC599B0BDB0F3B30A63	1809
+7E159E9BE7E745D19CF5BC7468A7CB12	1785
+
+16. [MEDIUM] Виведіть топ-10 контенту за переглядами разом із його назвою (asset_name) та типом (asset_type)
+
+SELECT 
+    e.asset_id,
+    a.asset_name,
+    a.asset_type,
+    COUNT(*) AS count_users
+FROM events AS e
+JOIN asset AS a ON e.asset_id = a.asset_id
+WHERE e.event_name = 'play_click'
+GROUP BY e.asset_id
+ORDER BY count_users DESC
+LIMIT 10
+..
+55efdb73e4b0781039bc055f	СТБ HD	channel	245608
+55efdb73e4b0781039bc0544	Новий канал HD	channel	111216
+68fb631b4eb468b99819f75b	КС ТБ | Футбол	channel	77276
+63a1cdb84c3452c24a804dfd	1+1 Україна HD	channel	74470
+55efdb73e4b0781039bc0487	ТЕТ HD	channel	74054
+63a1cebb4c3452c24a84352f	ICTV 2 HD	channel	63868
+5f7482c51774d4de8a615eeb	Setanta Sports + HD	channel	59410
+55efdb77e4b0781039bc0ec5	Eurosport HD	channel	59216
+55efdb73e4b0781039bc046c	2+2 HD	channel	53510
+55efdb73e4b0781039bc04d8	Бігуді	channel	34585
+
+
+17. [MEDIUM] Порахуйте кількість переглядів у розрізі типу контенту (asset_type: movie, series, channel тощо). 
+
+
+SELECT 
+   
+    a.asset_type,
+    COUNT(*) AS count_users
+FROM events AS e
+JOIN asset AS a ON e.asset_id = a.asset_id
+WHERE e.event_name = 'play_click'
+GROUP BY a.asset_type
+ORDER BY count_users DESC
+LIMIT 10
+
+episode	1711105
+channel	1542772
+movie	379924
+sport_event	9833
+series	419
+
+
+18. [MEDIUM] Визначте топ-5 правовласників (major_company) за кількістю переглядів їхніх фільмів і серіалів. 
+
+SELECT a.major_company,
+    COUNT(*) AS count_views
+FROM events AS e
+JOIN asset AS a ON e.asset_id = a.asset_id
+WHERE e.event_name = 'play_click' and a.asset_type in ('movie','series')
+GROUP BY a.major_company
+ORDER BY count_views DESC
+LIMIT 10
+
+Sony	62308
+1+1 TVOD and EST	54909
+TopFilm	31660
+Paramount	26390
+Metro-Goldwyn-Mayer	25586
+Universal	25514
+SIDE	18986
+Film.Ua	15526
+Popular on TV	15015
+Green Light Films	13767
+
+19. [MEDIUM] Порахуйте кількість покупок (thank_you_page_open) у розрізі назв тарифів (product_name).
+
+
+SELECT p.product_name,
+    COUNT(*) AS count_purchase
+FROM events AS e
+JOIN product AS p ON e.package_id = p.product_id
+WHERE e.event_name = 'thank_you_page_open' 
+GROUP BY p.product_name
+ORDER BY count_purchase DESC
+LIMIT 10
+
+Суперсила	5016
+Легкий старт	1271
+Плюс	833
+Преміум HD 2021 new (оплата карткою)	788
+Сімейний 2021 new (оплата карткою)	353
+Базовий 2022 (оплата карткою)	256
+Сімейний 2021	90
+Базовий 2021	51
+Преміум HD 2021	38
+Дорослий	20
+
+20. [MEDIUM] Порахуйте сумарну виручку (сума покупок, product_price) по кожному тарифу і виведіть тарифи за спаданням виручки. 
+
+SELECT p.product_name, 
+   sum(p.product_price) AS sum_purchase
+FROM events AS e
+JOIN product AS p ON e.package_id = p.product_id
+WHERE e.event_name = 'thank_you_page_open' 
+GROUP BY p.product_name
+ORDER BY sum_purchase DESC
+LIMIT 10
+
+Суперсила	250800
+Преміум HD 2021 new (оплата карткою)	157600
+Сімейний 2021 new (оплата карткою)	52950
+Плюс	41650
+Базовий 2022 (оплата карткою)	30720
+Сімейний 2021	13500
+Преміум HD 2021	7600
+Базовий 2021	6120
+ВСЕ РАЗОМ Наснага	5700
+Chernobyl HD EST	2502
+
+
+21. [MEDIUM] Порахуйте розподіл покупок за типом оплати (payment_type: svod / tvod / est …). 
+
+SELECT 
+    p.payment_type AS payment_model,
+    COUNT(*) AS total_orders,
+    ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) || '%' AS orders_percent,
+    SUM(p.product_price) AS total_revenue,
+    ROUND(SUM(p.product_price) * 100.0 / SUM(SUM(p.product_price)) OVER(), 2) || '%' AS revenue_percent
+FROM events AS e
+JOIN product AS p ON e.package_id = p.product_id
+WHERE 
+    e.event_name = 'thank_you_page_open'
+GROUP BY 
+    p.payment_type
+ORDER BY 
+    total_revenue DESC
+
+svod	8750	84.19%	569920	81.69%
+est	678	6.52%	77062	11.05%
+tvod	965	9.29%	50705	7.27%
+
+22. [MEDIUM] Виведіть топ-10 контенту, який найчастіше додають в обране (vod_watchlist_add), із назвою і типом. 
+
+
+SELECT 
+       a.asset_name,
+    a.asset_type,
+    COUNT(*) AS count_users
+FROM events AS e
+JOIN asset AS a ON e.asset_id = a.asset_id
+WHERE e.event_name = 'vod_watchlist_add'
+GROUP BY e.asset_id
+ORDER BY count_users DESC
+LIMIT 10
+
+
+Пограбування: План «Лондон»	movie	589
+Любов. секс і вибори	movie	534
+Мадам Павутина	movie	348
+Нестримне весілля	movie	254
+Бачу тебе	movie	241
+Підміна	series	223
+Парочка слідчих	series	179
+Випробувальний термін	movie	173
+Uncharted: Незвідане	movie	172
+007: Не час помирати	movie	145
+
+
+23. [HIGH] Порахуйте кількість унікальних користувачів, які переглядали контент компанії DISNEY. 
+
+SELECT 
+    COUNT(DISTINCT e.user_pseudo_id) AS unique_disney_viewers
+FROM events AS e
+JOIN asset AS a ON e.asset_id = a.asset_id
+WHERE e.event_name = 'play_click' 
+  AND a.major_company = 'DISNEY'
+
+1380
+
+24. [MEDIUM] Розподіліть користувачів на групи за кількістю переглядів (1, 2–5, 6–10, 11+) і порахуйте користувачів у кожній групі
+
+  WITH user_views AS (
+    SELECT 
+        user_pseudo_id, 
+        COUNT(*) AS views_count
+    FROM events
+    WHERE event_name = 'play_click'
+    GROUP BY user_pseudo_id
+)
+SELECT 
+    CASE 
+        WHEN views_count = 1 THEN '1'
+        WHEN views_count BETWEEN 2 AND 5 THEN '2–5'
+        WHEN views_count BETWEEN 6 AND 10 THEN '6–10'
+        ELSE '11+' 
+    END AS views_group,
+    COUNT(*) AS users_count
+FROM user_views
+GROUP BY views_group
+ORDER BY 
+    CASE views_group
+        WHEN '1' THEN 1
+        WHEN '2–5' THEN 2
+        WHEN '6–10' THEN 3
+        ELSE 4
+    END
+
+
+1	20729
+2–5	37932
+6–10	23732
+11+	74322
+
+25. [MEDIUM] За допомогою CASE розділіть користувачів на дві групи за версією застосунку — «остання версія (3.1.6)» та «застаріла версія» — і порахуйте частку користувачів у кожній групі. 
+
+
+WITH ranked_versions AS (
+    SELECT
+        user_pseudo_id,
+        app_info_version,
+        ROW_NUMBER() OVER (
+            PARTITION BY user_pseudo_id
+            ORDER BY event_datetime DESC
+        ) AS rn
+    FROM events
+    WHERE app_info_version IS NOT NULL
+),
+user_apps AS (
+    SELECT
+        user_pseudo_id,
+        app_info_version
+    FROM ranked_versions
+    WHERE rn = 1
+),
+classified_users AS (
+    SELECT
+        user_pseudo_id,
+        CASE
+            WHEN app_info_version = '3.1.6'
+                THEN 'остання версія (3.1.6)'
+            ELSE 'застаріла версія'
+        END AS version_group
+    FROM user_apps
+)
+SELECT
+    version_group,
+    COUNT(*) AS users_count,
+    ROUND(
+        COUNT(*) * 100.0 /
+        (SELECT COUNT(*) FROM classified_users),
+        2
+    ) AS share_percent
+FROM classified_users
+GROUP BY version_group;
+
+застаріла версія	21964	9.02%
+остання версія (3.1.6)	222129	91.05%
+
+26. [MEDIUM] Порахуйте частку користувачів, які зробили хоча б одну покупку (payer rate). 
+
+
+SELECT 
+    COUNT(DISTINCT CASE WHEN event_name = 'thank_you_page_open' THEN user_pseudo_id END) AS paying_users,
+    COUNT(DISTINCT user_pseudo_id) AS total_users,
+    ROUND(
+        COUNT(DISTINCT CASE WHEN event_name = 'thank_you_page_open' THEN user_pseudo_id END) * 100.0 / 
+        COUNT(DISTINCT user_pseudo_id), 
+        2
+    ) ||'%' AS payer_rate_percent
+FROM events
+
+7049	244093	2.89%
+
+
+27. [HIGH] Для кожної країни виведіть в одному рядку частку переглядів з планшета і з телефона (півот через CASE). 
+
+
+SELECT 
+    country,
+    ROUND(
+        COUNT(CASE WHEN category = 'mobile' THEN 1 END) * 100.0 / COUNT(*), 
+        2) || '%'  AS phone_share_percent,
+    
+    ROUND(
+        COUNT(CASE WHEN category = 'tablet' THEN 1 END) * 100.0 / COUNT(*), 
+        2) || '%'  AS tablet_share_percent
+FROM events
+WHERE event_name = 'play_click' AND country IS NOT NULL AND country != ''
+GROUP BY country
+ORDER BY COUNT(*) DESC
+limit 10
+
+
+Ukraine	89.2%	10.8%
+Poland	85.03%	14.97%
+Germany	75.28%	24.72%
+Czechia	88.35%	11.65%
+United Kingdom	81.13%	18.87%
+United States	82.59%	17.41%
+Netherlands	77.04%	22.96%
+Spain	80.53%	19.47%
+Italy	84.56%	15.44%
+France	81.8%	18.2%
+
+
+28. [MEDIUM] Для кожної країни порахуйте частку користувачів, які зробили хоча б одну покупку (thank_you_page_open), і виведіть топ-5 країн за цією часткою серед країн, де щонайменше 20 користувачів. 
+
+SELECT
+    country,
+    COUNT(DISTINCT CASE
+        WHEN event_name = 'thank_you_page_open'
+        THEN user_pseudo_id
+    END) AS paying_users,
+
+    COUNT(DISTINCT user_pseudo_id) AS total_users,
+
+    ROUND(
+        COUNT(DISTINCT CASE
+            WHEN event_name = 'thank_you_page_open'
+            THEN user_pseudo_id
+        END) * 100.0 /
+        COUNT(DISTINCT user_pseudo_id),
+        2
+    ) AS payer_rate_percent
+
+FROM events
+WHERE country IS NOT NULL
+  AND country != ''
+
+GROUP BY country
+
+HAVING COUNT(DISTINCT user_pseudo_id) >= 20
+
+ORDER BY payer_rate_percent DESC
+LIMIT 5;
+
+United Kingdom	130	2671	4.87%
+Netherlands	100	2052	4.87%
+Denmark	33	683	4.83%
+Germany	391	9118	4.29%
+Spain	61	1490	4.09%
+
+29. [MEDIUM] Порахуйте середню кількість переглядів на одного користувача. 
+
+WITH user_views AS (
+    SELECT 
+        user_pseudo_id,
+        COUNT(*) AS total_user_clicks
+    FROM events
+    WHERE event_name = 'play_click'
+    GROUP BY user_pseudo_id
+)
+SELECT 
+    ROUND(AVG(total_user_clicks), 2) AS avg_views_per_user
+FROM user_views
+
+
+23.25
+
+30. [MEDIUM] Знайдіть користувачів, кількість переглядів яких перевищує середню кількість переглядів на користувача в їхній країні. 
+
+WITH user_country_clicks AS (
+    SELECT 
+        country,
+        user_pseudo_id,
+        COUNT(*) AS user_clicks,
+        AVG(COUNT(*)) OVER(PARTITION BY country) AS avg_country_clicks
+    FROM events
+    WHERE event_name = 'play_click' 
+      AND country IS NOT NULL AND country != ''
+    GROUP BY country, user_pseudo_id
+)
+SELECT 
+    country,
+    user_pseudo_id,
+    user_clicks,
+    ROUND(avg_country_clicks, 2) AS country_average
+FROM user_country_clicks
+WHERE user_clicks > avg_country_clicks
+ORDER BY country ASC, user_clicks DESC
+limit 20
+
+Albania	4ACF6CBB7F614A05B60AEBA39BE6A4EF	93	18.82
+Albania	DB1B910EB6E945A5AA2BDF6CB44EF5D5	83	18.82
+Albania	EAB24C0F3FE14EBCB03991A80798CF43	73	18.82
+Albania	7062F8ACAD544FCABF26FBBDB4B94D5F	71	18.82
+Albania	8C4328EC48854193901CED9DF057A173	69	18.82
+Albania	1FD9CB10084D486BB3E33995A03A5B1A	62	18.82
+Albania	3CD017453C3E4A989F984F121880A504	54	18.82
+Albania	8A1BAE2B9B8C48688A7C66C1962C71F1	50	18.82
+Albania	B31F0EC3DFBE49F180F12A5FBC45F4AE	44	18.82
+Albania	DDCD42C0ADDB4102B26F1FC5BEEDADD8	28	18.82
+Albania	1652725F6E52436CB566F8C27DE76C31	27	18.82
+Albania	92A9432F978E424CB246C6438EC039FB	24	18.82
+Albania	C57EFE85FBC246B29617A673098BC598	22	18.82
+Armenia	BE61320FDBCB4A53832C599C489DED5F	78	19.5
+Australia	DE30EB22E6F544828FDBCE08F5E59D4B	52	14.17
+Australia	90F8A6A8BED241668AACF2D08F858084	33	14.17
+Australia	138DD8B337C14593B8B9A05B84CDA2F7	32	14.17
+Australia	67CCF030249B4DB0BA1ACF49C5EE49EE	32	14.17
+Australia	B6C48BD224A14655AA6A9E907C0BC92D	27	14.17
+Australia	E0983DE62A1F424D8ED0B8460BDFF79E	25	14.17
+
+31. [HIGH] Визначте топ-3 країни за виручкою (сума покупок), а потім для кожної з них покажіть розподіл виручки по тарифах. 
+
+
+SELECT 
+    e.country,
+    ROUND(SUM(p.product_price), 2) AS total_revenue,
+    
+    ROUND(SUM(CASE 
+        WHEN p.product_name LIKE '%remium%' OR p.product_name LIKE '%реміум%' 
+          OR p.product_name LIKE '%лагодій%' OR p.product_name LIKE '%аснага%' 
+        THEN p.product_price ELSE 0.0 END), 2) AS premium_revenue,
+        
+    ROUND(SUM(CASE 
+        WHEN p.product_name LIKE '%standard%' OR p.product_name LIKE '%тандарт%' 
+          OR p.product_name LIKE '%HD ES%' 
+        THEN p.product_price ELSE 0.0 END), 2) AS standard_revenue,
+        
+    ROUND(SUM(CASE 
+        WHEN p.product_name LIKE '%basic%' OR p.product_name LIKE '%азовий%' 
+        THEN p.product_price ELSE 0.0 END), 2) AS basic_revenue,
+        
+    ROUND(SUM(CASE 
+        WHEN p.product_name NOT LIKE '%remium%' AND p.product_name NOT LIKE '%реміум%' 
+         AND p.product_name NOT LIKE '%лагодій%' AND p.product_name NOT LIKE '%аснага%'
+         AND p.product_name NOT LIKE '%standard%' AND p.product_name NOT LIKE '%тандарт%' AND p.product_name NOT LIKE '%HD ES%'
+         AND p.product_name NOT LIKE '%basic%' AND p.product_name NOT LIKE '%азовий%' 
+        THEN p.product_price ELSE 0.0 END), 2) AS other_revenue
+FROM events AS e
+JOIN product AS p ON e.package_id = p.product_id
+WHERE e.event_name = 'thank_you_page_open' 
+  AND e.country IS NOT NULL 
+  AND e.country != ''
+GROUP BY e.country
+ORDER BY total_revenue DESC
+LIMIT 3
+
+Ukraine	487354.0	103640.0	28256.0	29040.0	326418.0
+Poland	50680.0	18000.0	3314.0	3000.0	26366.0
+Germany	43853.0	14630.0	6150.0	1440.0	21633.0
+
+
+32. [MEDIUM] До DAU по днях додайте колонку зі зміною відносно попереднього дня.
+
+WITH daily_dau AS (
+    SELECT 
+        DATE(event_date) AS date,
+        COUNT(DISTINCT user_pseudo_id) AS dau
+    FROM events
+    GROUP BY DATE(event_date)
+),
+dau_with_lag AS (
+    SELECT 
+        date,
+        dau,
+        LAG(dau, 1) OVER (ORDER BY date) AS prev_dau
+    FROM daily_dau
+)
+SELECT 
+    date,
+    dau,
+       (dau - IFNULL(prev_dau, dau)) AS dau_change_abs
+FROM dau_with_lag
+ORDER BY date
+
+
+2026-06-02	85011	0
+2026-06-03	83201	-1810
+2026-06-04	88882	5681
+2026-06-05	77266	-11616
+2026-06-06	83947	6681
+2026-06-07	94505	10558
+
+33. [MEDIUM] Для play_click по днях додайте 3-денне ковзне середнє. 
+
+WITH daily_play_clicks AS (
+    SELECT 
+        DATE(event_date) AS date,
+        COUNT(*) AS clicks_count
+    FROM events
+    WHERE event_name = 'play_click'
+    GROUP BY DATE(event_date)
+)
+SELECT 
+    date,
+    clicks_count,
+    ROUND(
+        AVG(clicks_count) OVER (
+            ORDER BY date 
+            ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+        ), 
+        2
+    ) AS rolling_avg_3d
+FROM daily_play_clicks
+ORDER BY date
+
+2026-06-02	599479	599479.0
+2026-06-03	601806	600642.5
+2026-06-04	626130	609138.33
+2026-06-05	523730	583888.67
+2026-06-06	577720	575860.0
+2026-06-07	715212	605554.0
+
+34. [MEDIUM] Порахуйте накопичувальну (наростаючим підсумком) кількість нових користувачів по днях.
+
+WITH user_first_open AS (
+    SELECT
+        user_pseudo_id,
+        MIN(DATE(event_date)) AS first_date
+    FROM events
+    WHERE event_name = 'first_open'
+    GROUP BY user_pseudo_id
+),
+new_users_per_day AS (
+    SELECT
+        first_date AS date,
+        COUNT(*) AS new_users_count
+    FROM user_first_open
+    GROUP BY first_date
+)
+SELECT
+    date,
+    new_users_count,
+
+    SUM(new_users_count) OVER (
+        ORDER BY date
+        ROWS BETWEEN UNBOUNDED PRECEDING
+        AND CURRENT ROW
+    ) AS cumulative_new_users
+
+FROM new_users_per_day
+ORDER BY date;
+
+2026-06-02	85011	85011
+2026-06-03	40388	125399
+2026-06-04	35720	161119
+2026-06-05	25297	186416
+2026-06-06	28689	215105
+2026-06-07	28988	244093
+
+35. [HIGH] Для кожної країни виведіть топ-3 контенту за переглядами (з назвою), використавши віконну функцію. 
+
+WITH content_views AS (
+    SELECT
+        e.country,
+        a.asset_name AS content_name,
+        COUNT(*) AS total_views
+    FROM events AS e
+    JOIN asset AS a
+        ON e.asset_id = a.asset_id
+    WHERE e.event_name = 'play_click'
+    GROUP BY
+        e.country,
+        a.asset_id,
+        a.asset_name
+),
+ranked_content AS (
+    SELECT
+        country,
+        content_name,
+        total_views,
+        ROW_NUMBER() OVER (
+            PARTITION BY country
+            ORDER BY total_views DESC
+        ) AS rank
+    FROM content_views
+)
+SELECT
+    country,
+    rank,
+    content_name,
+    total_views
+FROM ranked_content
+WHERE rank <= 3
+ORDER BY country ASC, rank ASC;
+
+Albania	1	Суперсила	2
+Austria	1	Суперсила	8
+Austria	2	Плюс	4
+Austria	3	Преміум HD 2021 new (оплата карткою)	3
+Belgium	1	Суперсила	15
+Belgium	2	Преміум HD 2021 new (оплата карткою)	8
+Belgium	3	Легкий старт	5
+Brazil	1	Суперсила	4
+Bulgaria	1	Суперсила	10
+Bulgaria	2	Легкий старт	3
+Bulgaria	3	Преміум HD 2021 new (оплата карткою)	2
+Canada	1	Суперсила	16
+Canada	2	Преміум HD 2021 new (оплата карткою)	6
+Canada	3	Плюс	2
+China	1	Сімейний 2021 new (оплата карткою)	1
+Croatia	1	Плюс	3
+
+
+36. [HIGH] Для кожного користувача пронумеруйте його перегляди контенту в хронологічному порядку (віконна функція) і визначте, який контент (asset_id з назвою) найчастіше стає першим переглядом користувачів. 
+
+
+WITH numbered_views AS (
+    SELECT
+        e.user_pseudo_id,
+        e.asset_id,
+        a.asset_name,
+
+        ROW_NUMBER() OVER (
+            PARTITION BY e.user_pseudo_id
+            ORDER BY e.event_datetime ASC
+        ) AS view_order
+
+    FROM events AS e
+
+    JOIN asset AS a
+        ON e.asset_id = a.asset_id
+
+    WHERE e.event_name = 'play_click'
+      AND e.asset_id IS NOT NULL
+),
+first_views_stats AS (
+    SELECT
+        asset_id,
+        asset_name,
+        COUNT(*) AS first_view_count
+
+    FROM numbered_views
+    WHERE view_order = 1
+
+    GROUP BY
+        asset_id,
+        asset_name
+)
+SELECT
+    asset_id,
+    asset_name,
+    first_view_count
+
+FROM first_views_stats
+
+ORDER BY first_view_count DESC
+LIMIT 1;
+
+61278495e1540ac891dccb4e	Суперсила	1787
+
+37. [HIGH] Проранжуйте тарифи за виручкою (сума покупок) всередині кожного типу оплати (payment_type).
+
+SELECT 
+    sub.payment_type,
+    sub.revenue_rank,
+    sub.tariff_name,
+    sub.total_revenue
+FROM (
+    SELECT 
+        payment_type,
+        tariff_name,
+        ROUND(total_revenue, 2) AS total_revenue,
+        DENSE_RANK() OVER (
+            PARTITION BY payment_type 
+            ORDER BY total_revenue DESC
+        ) AS revenue_rank
+    FROM (
+        SELECT 
+            p.payment_type, 
+            p.product_name AS tariff_name,       
+            SUM(p.product_price) AS total_revenue 
+        FROM events AS e
+        JOIN product AS p ON e.package_id = p.product_id
+        WHERE e.event_name = 'thank_you_page_open'
+                GROUP BY p.payment_type, p.product_name
+    )
+) AS sub
+WHERE sub.revenue_rank <= 5
+ORDER BY sub.payment_type ASC, sub.revenue_rank ASC
+
+est	1	Chernobyl HD EST	2502.0
+est	2	Game of Thrones (Season 1) HD ES	1946.0
+est	3	Game of Thrones (Season 3) HD ES	1807.0
+est	4	Game of Thrones (Season 2) HD ES	1668.0
+est	5	House of the Dragon (Season 1) H	1183.0
+est	5	The Last of Us HD EST	1183.0
+svod	1	Суперсила	250800.0
+svod	2	Преміум HD 2021 new (оплата карткою)	157600.0
+svod	3	Сімейний 2021 new (оплата карткою)	52950.0
+svod	4	Плюс	41650.0
+svod	5	Базовий 2022 (оплата карткою)	30720.0
+tvod	1	DUNE 2 TVOD HD	1134.0
+tvod	2	DEVIL WEARS PRADA TVOD HD	767.0
+tvod	3	PIRATES OF THE CARIBBEAN: THE CU	540.0
+tvod	4	Interstellar (2014) HD TVOD	539.0
+tvod	5	JOKER FOLIE A DEUX TVOD SD	507.0
+
+38. [MEDIUM] Порахуйте CTR (клік / показ) окремо для кетфіша, поп-апа і банера та порівняйте їх ефективність. 
+
+SELECT 
+    'Catfish' AS ad_type,
+    SUM(CASE WHEN event_name = 'catfish_display' THEN 1 ELSE 0 END) AS impressions,
+    SUM(CASE WHEN event_name = 'catfish_click' THEN 1 ELSE 0 END) AS clicks,
+    ROUND(
+        SUM(CASE WHEN event_name = 'catfish_click' THEN 1 ELSE 0 END) * 100.0 / 
+        NULLIF(SUM(CASE WHEN event_name = 'catfish_display' THEN 1 ELSE 0 END), 0), 
+        2
+    )  || '%' AS ctr_percentage
+FROM events
+
+UNION ALL
+
+SELECT 
+    'Banner' AS ad_type,
+    SUM(CASE WHEN event_name = 'mainpage_banner_show' THEN 1 ELSE 0 END) AS impressions,
+    SUM(CASE WHEN event_name = 'mainpage_banner_click' THEN 1 ELSE 0 END) AS clicks,
+    ROUND(
+        SUM(CASE WHEN event_name = 'mainpage_banner_click' THEN 1 ELSE 0 END) * 100.0 / 
+        NULLIF(SUM(CASE WHEN event_name = 'mainpage_banner_show' THEN 1 ELSE 0 END), 0), 
+        2
+    ) || '%' AS ctr_percentage
+FROM events
+UNION ALL
+
+SELECT 
+    'Pop-up' AS ad_type,
+    SUM(CASE WHEN event_name = 'pop_up_display' THEN 1 ELSE 0 END) AS impressions,
+    SUM(CASE WHEN event_name = 'pop_up_click' THEN 1 ELSE 0 END) AS clicks,
+    ROUND(
+        SUM(CASE WHEN event_name = 'pop_up_click' THEN 1 ELSE 0 END) * 100.0 / 
+        NULLIF(SUM(CASE WHEN event_name = 'pop_up_display' THEN 1 ELSE 0 END), 0), 
+        2
+    )  || '%' AS ctr_percentage
+FROM events
+ORDER BY ctr_percentage DESC
+
+
+Pop-up	153049	5312	3.47%
+Banner	327600	2763	0.84%
+Catfish	729777	4769	0.65%
+
+39. [HIGH] Побудуйте воронку покупки через кетфіш (catfish_display → catfish_click → thank_you_page_open) з урахуванням порядку подій у часі та виведіть drop-off на кожному кроці. 
+
+
+
+WITH unique_user_events AS (
+    SELECT 
+        user_pseudo_id,
+        event_name,
+        MIN(event_datetime) AS event_time
+    FROM events
+    WHERE event_name IN ('catfish_display', 'catfish_click', 'thank_you_page_open')
+    GROUP BY user_pseudo_id, event_name
+),
+ordered_funnel AS (
+    SELECT 
+        user_pseudo_id,
+        event_name,
+        LEAD(event_name, 1) OVER (
+            PARTITION BY user_pseudo_id 
+            ORDER BY event_time ASC
+        ) AS next_event,
+        LEAD(event_name, 2) OVER (
+            PARTITION BY user_pseudo_id 
+            ORDER BY event_time ASC
+        ) AS second_next_event
+    FROM unique_user_events
+),
+funnel_totals AS (
+    SELECT
+    COUNT(DISTINCT CASE WHEN event_name = 'catfish_display' THEN user_pseudo_id END) AS total_displays,
+        
+        COUNT(DISTINCT CASE WHEN event_name = 'catfish_display' 
+            AND next_event = 'catfish_click' THEN user_pseudo_id END) AS total_clicks,
+            
+        COUNT(DISTINCT CASE WHEN event_name = 'catfish_display' 
+            AND next_event = 'catfish_click' 
+            AND second_next_event = 'thank_you_page_open' THEN user_pseudo_id END) AS total_purchases
+    FROM ordered_funnel
+)
+SELECT 
+    total_displays,
+    total_clicks,
+    total_purchases,
+    ROUND((total_displays - total_clicks) * 100.0 / NULLIF(total_displays, 0), 2) AS drop_off_display_to_click_pct,
+    ROUND((total_clicks - total_purchases) * 100.0 / NULLIF(total_clicks, 0), 2) AS drop_off_click_to_purchase_pct,
+    ROUND(total_purchases * 100.0 / NULLIF(total_displays, 0), 2) AS total_conversion_pct
+FROM funnel_totals
+
+81962	3246	831	96.04	74.4	1.01
+
+40. [HIGH] Порахуйте наскрізну конверсію first_open → login_success → play_click → thank_you_page_open. 
+
+WITH ordered_funnel AS (
+    SELECT 
+        user_pseudo_id,
+        event_name,
+        LEAD(event_name, 1) OVER (
+            PARTITION BY user_pseudo_id 
+            ORDER BY event_datetime ASC
+        ) AS next_event_1,
+        LEAD(event_name, 2) OVER (
+            PARTITION BY user_pseudo_id 
+            ORDER BY event_datetime ASC
+        ) AS next_event_2,
+        LEAD(event_name, 3) OVER (
+            PARTITION BY user_pseudo_id 
+            ORDER BY event_datetime ASC
+        ) AS next_event_3
+    FROM events
+    WHERE event_name IN ('first_open', 'login_success', 'play_click', 'thank_you_page_open')
+),
+funnel_steps AS (
+SELECT
+        COUNT(DISTINCT CASE WHEN event_name = 'first_open' THEN user_pseudo_id END) AS step1_open,
+        COUNT(DISTINCT CASE WHEN event_name = 'first_open' 
+            AND next_event_1 = 'login_success' THEN user_pseudo_id END) AS step2_login,
+        COUNT(DISTINCT CASE WHEN event_name = 'first_open' 
+            AND next_event_1 = 'login_success' 
+            AND next_event_2 = 'play_click' THEN user_pseudo_id END) AS step3_play,
+        COUNT(DISTINCT CASE WHEN event_name = 'first_open' 
+            AND next_event_1 = 'login_success' 
+            AND next_event_2 = 'play_click' 
+            AND next_event_3 = 'thank_you_page_open' THEN user_pseudo_id END) AS step4_purchase
+    FROM ordered_funnel
+)
+SELECT 
+    step1_open AS total_first_open,
+    step2_login AS total_login_success,
+    step3_play AS total_play_click,
+    step4_purchase AS total_thank_you_page_open,
+    ROUND(step2_login * 100.0 / NULLIF(step1_open, 0), 2) AS open_to_login_pct,
+    ROUND((step1_open - step2_login) * 100.0 / NULLIF(step1_open, 0), 2) AS drop_off_login_pct,
+    ROUND(step3_play * 100.0 / NULLIF(step2_login, 0), 2) AS login_to_play_pct,
+    ROUND((step2_login - step3_play) * 100.0 / NULLIF(step2_login, 0), 2) AS drop_off_play_pct,
+    ROUND(step4_purchase * 100.0 / NULLIF(step3_play, 0), 2) AS play_to_purchase_pct,
+    ROUND((step3_play - step4_purchase) * 100.0 / NULLIF(step3_play, 0), 2) AS drop_off_purchase_pct,
+    ROUND(step4_purchase * 100.0 / NULLIF(step1_open, 0), 2) AS end_to_end_conversion_pct
+FROM funnel_steps
+
+15175	9857	6052	137	64.96	35.04	61.4	38.6	2.26	97.74	0.9
+
+
+
+41. [HIGH] Порахуйте, яка частка користувачів після перегляду контенту (play_click) додає контент в обране (vod_watchlist_add). 
+
+WITH user_behavior AS (
+    SELECT 
+        user_pseudo_id,
+        MIN(CASE WHEN event_name = 'play_click' THEN event_datetime END) AS first_play_time,
+        MIN(CASE WHEN event_name = 'vod_watchlist_add' THEN event_datetime END) AS first_add_time
+    FROM events
+    WHERE event_name IN ('play_click', 'vod_watchlist_add')
+    GROUP BY user_pseudo_id
+),
+filtered_users AS (
+    SELECT 
+        user_pseudo_id,
+        CASE WHEN first_add_time >= first_play_time THEN 1 ELSE 0 END AS added_after_play
+    FROM user_behavior
+    WHERE first_play_time IS NOT NULL
+)
+SELECT 
+    COUNT(*) AS total_users_who_played,
+    SUM(added_after_play) AS total_users_who_added,
+    ROUND(
+        SUM(added_after_play) * 100.0 / COUNT(*), 
+        2
+        ) || '%' AS share_percentage
+FROM filtered_users
+
+
+156715	5268	3.36
+
+42. [HIGH] Визначте, який промо-канал (кетфіш / поп-ап / банер) приносить найбільше покупок. 
+
+WITH user_first_touch AS (
+    SELECT 
+        user_pseudo_id,
+        MIN(CASE WHEN event_name = 'catfish_display' THEN event_datetime END) AS catfish_time,
+        MIN(CASE WHEN event_name = 'pop_up_display' THEN event_datetime END) AS popup_time,
+        MIN(CASE WHEN event_name = 'mainpage_banner_show' THEN event_datetime END) AS banner_time,
+        MIN(CASE WHEN event_name = 'thank_you_page_open' THEN event_datetime END) AS purchase_time
+    FROM events
+    WHERE event_name IN (
+        'catfish_display', 'pop_up_display', 'mainpage_banner_show', 
+        'thank_you_page_open'
+    )
+    GROUP BY user_pseudo_id
+),
+attributed_purchases AS (
+    SELECT 
+        user_pseudo_id,
+        CASE 
+        	WHEN purchase_time IS NOT NULL AND catfish_time <= purchase_time THEN 'Catfish'
+            WHEN purchase_time IS NOT NULL AND popup_time <= purchase_time THEN 'Pop-up'
+            WHEN purchase_time IS NOT NULL AND banner_time <= purchase_time THEN 'Banner'
+            ELSE 'No Promo / Organic'
+        END AS conversion_channel
+    FROM user_first_touch
+    WHERE purchase_time IS NOT NULL
+)
+SELECT 
+    conversion_channel,
+    COUNT(*) AS total_purchases
+FROM attributed_purchases
+GROUP BY conversion_channel
+ORDER BY total_purchases DESC
+        
+Catfish	3921
+No Promo / Organic	1587
+Pop-up	1426
+Banner	115
+
+
+
+43. [HIGH] Порахуйте ARPU та ARPPU за період (виручка = сума покупок; ARPU — на активного користувача, ARPPU — на платника). 
+
+SELECT 
+    COUNT(DISTINCT e.user_pseudo_id) AS total_active_users,
+
+    COUNT(DISTINCT CASE WHEN e.event_name = 'thank_you_page_open' THEN e.user_pseudo_id END) AS total_paying_users,
+
+    SUM(CASE WHEN e.event_name = 'thank_you_page_open' THEN p.product_price ELSE 0.0 END) AS total_revenue,
+
+    round((SUM(CASE WHEN e.event_name = 'thank_you_page_open' THEN p.product_price ELSE 0.0 END) * 1.0) / 
+    NULLIF(COUNT(DISTINCT e.user_pseudo_id), 0) ,2)AS arpu,
+    
+    round((SUM(CASE WHEN e.event_name = 'thank_you_page_open' THEN p.product_price ELSE 0.0 END) * 1.0) / 
+    NULLIF(COUNT(DISTINCT CASE WHEN e.event_name = 'thank_you_page_open' THEN e.user_pseudo_id END), 0),2) AS arppu
+FROM events AS e
+LEFT JOIN product AS p ON e.package_id = p.product_id
+
+244093	7049	697687.0	2.86	98.98
+
+
+44. [MEDIUM] Порахуйте виручку (сума покупок) по днях і накопичувальну виручку наростаючим підсумком. 
+
+WITH daily_revenue AS (
+    SELECT 
+        event_date AS date,
+        SUM(CASE WHEN e.event_name = 'thank_you_page_open' THEN p.product_price ELSE 0.0 END) AS revenue_per_day
+    FROM events AS e
+    LEFT JOIN product AS p ON e.package_id = p.product_id
+    GROUP BY event_date
+)
+SELECT 
+    date,
+    revenue_per_day,
+    SUM(revenue_per_day) OVER (
+        ORDER BY date 
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS cumulative_revenue
+FROM daily_revenue
+ORDER BY date
+
+
+
+2026-06-02	118332.0	118332.0
+2026-06-03	104270.0	222602.0
+2026-06-04	157747.0	380349.0
+2026-06-05	83142.0	463491.0
+2026-06-06	108096.0	571587.0
+2026-06-07	126100.0	697687.0
+
+45. [MEDIUM] Порахуйте середній чек у розрізі типу оплати (svod / tvod / est). 
+
+SELECT 
+    p.payment_type AS payment_model,
+    COUNT(CASE WHEN e.event_name = 'thank_you_page_open' THEN 1 END) AS total_orders,
+    SUM(CASE WHEN e.event_name = 'thank_you_page_open' THEN p.product_price ELSE 0.0 END) AS total_revenue,
+    round((SUM(CASE WHEN e.event_name = 'thank_you_page_open' THEN p.product_price ELSE 0.0 END) * 1.0) / 
+    NULLIF(COUNT(CASE WHEN e.event_name = 'thank_you_page_open' THEN 1 END), 0),2) AS average_check
+FROM events AS e
+JOIN product AS p ON e.package_id = p.product_id
+WHERE e.event_name = 'thank_you_page_open'
+GROUP BY p.payment_type
+ORDER BY average_check DESC
+
+est	678	77062	113.66
+svod	8750	569920	65.13
+tvod	965	50705	52.54
+
+46. [HIGH] Виведіть топ-10 контенту за виручкою (сума покупок) серед транзакційних покупок (tvod / est). 
+
+SELECT 
+    p.product_id AS content_id,
+    p.payment_type AS payment_model,
+    SUM(CASE WHEN e.event_name = 'thank_you_page_open' THEN p.product_price ELSE 0.0 END) AS total_revenue,
+    COUNT(CASE WHEN e.event_name = 'thank_you_page_open' THEN 1 END) AS total_orders
+FROM events AS e
+JOIN product AS p ON e.package_id = p.product_id
+WHERE 
+    e.event_name = 'thank_you_page_open'
+    AND p.payment_type IN ('tvod', 'est')
+GROUP BY 
+    p.product_id, 
+    p.payment_type
+ORDER BY 
+    total_revenue DESC
+LIMIT 10
+
+66a0d25ce4b04c9a80e52e45	est	2502	18
+6716248310f40b6090c7b3c4	est	1946	14
+6716255410f40b6090ce85a0	est	1807	13
+671624ff10f40b6090ce7a0d	est	1668	12
+66d6cfbb6b142a06cf415b78	est	1183	7
+66e2d7b26b142a06db1b2f58	est	1183	7
+661e1392e4b09c0acd0ddd53	tvod	1134	6
+66be05a62c7443c548cb621f	est	834	6
+636bd06b261455366fa3d88d	tvod	767	13
+66f572412dd4b5748e15f31b	est	695	5
+
+47. [HIGH] Не використовуючи подію session_start, реконструюйте сесії за правилом «новий сеанс, якщо між сусідніми подіями користувача минуло понад 30 хвилин», і порахуйте кількість сесій та середню кількість подій на сесію. 
+
+WITH session_starts AS (
+    SELECT 
+        user_pseudo_id,
+        event_datetime,
+        CASE 
+            WHEN prev_time IS NULL THEN 1
+            WHEN (strftime('%s', event_datetime) - strftime('%s', prev_time)) > 1800 THEN 1
+        END AS is_start
+    FROM (
+        SELECT user_pseudo_id, event_datetime,
+               LAG(event_datetime) OVER (PARTITION BY user_pseudo_id ORDER BY event_datetime) AS prev_time
+        FROM events
+    )
+),
+totals AS (
+    SELECT 
+        COUNT(*) AS total_events,
+        COUNT(is_start) AS total_sessions
+    FROM session_starts
+)
+SELECT 
+    total_sessions,
+    ROUND(total_events * 1.0 / NULLIF(total_sessions, 0), 2) AS avg_events_per_session
+FROM totals
+
+
+1162797	7.27
+
+
+48. [HIGH] Для сесій порахуйте їхню тривалість і виведіть медіану тривалості по типах пристрою (mobile / tablet). 
+
+
+WITH session_boundaries AS (
+    SELECT 
+        category,
+        user_pseudo_id,
+        event_datetime,
+        SUM(CASE WHEN event_name = 'session_start' THEN 1 ELSE 0 END) 
+            OVER (PARTITION BY user_pseudo_id ORDER BY event_datetime) AS session_id
+    FROM events
+    WHERE category IN ('mobile', 'tablet')
+),
+session_durations AS (
+    SELECT 
+        category,
+        (strftime('%s', MAX(event_datetime)) - strftime('%s', MIN(event_datetime))) / 60.0 AS session_duration_minutes
+    FROM session_boundaries
+    GROUP BY user_pseudo_id, session_id, category
+),
+ordered_durations AS (
+    SELECT 
+        category,
+        session_duration_minutes,
+        ROW_NUMBER() OVER (PARTITION BY category ORDER BY session_duration_minutes) AS row_num,
+        COUNT(*) OVER (PARTITION BY category) AS total_rows
+    FROM session_durations
+    )
+SELECT 
+    category,
+    ROUND(AVG(session_duration_minutes), 2) AS median_duration_minutes
+FROM ordered_durations
+WHERE row_num IN ((total_rows + 1) / 2, (total_rows + 2) / 2)
+GROUP BY category
+    
+mobile	5.72
+tablet	10.75
+
+49. [HIGH] Порахуйте D1 retention (повернення наступного дня) у розрізі когорт за датою першої активності користувача. 
+
+WITH user_activity AS (
+    SELECT DISTINCT
+        user_pseudo_id,
+        date(event_date) AS activity_date
+    FROM events
+),
+
+user_cohorts AS (
+    SELECT 
+        user_pseudo_id,
+        activity_date,
+        MIN(activity_date) OVER (PARTITION BY user_pseudo_id) AS cohort_date
+    FROM user_activity
+),
+
+cohort_sizes AS (
+    SELECT 
+        cohort_date,
+        COUNT(DISTINCT user_pseudo_id) AS cohort_size
+    FROM user_cohorts
+    GROUP BY cohort_date
+)
+SELECT 
+    c.cohort_date AS cohort,
+    s.cohort_size AS total_users,
+    COUNT(DISTINCT CASE WHEN julianday(c.activity_date) - julianday(c.cohort_date) = 1 THEN c.user_pseudo_id END) AS returned_d1_users,
+    ROUND(
+        COUNT(DISTINCT CASE WHEN julianday(c.activity_date) - julianday(c.cohort_date) = 1 THEN c.user_pseudo_id END) * 100.0 / s.cohort_size, 
+        2
+    ) || '%' AS d1_retention_rate
+
+FROM user_cohorts AS c
+JOIN cohort_sizes AS s ON c.cohort_date = s.cohort_date
+GROUP BY c.cohort_date, s.cohort_size
+ORDER BY c.cohort_date ASC
+
+2026-06-02	85011	42813	50.36%
+2026-06-03	40388	13525	33.49%
+2026-06-04	35720	8340	23.35%
+2026-06-05	25297	6315	24.96%
+2026-06-06	28689	8253	28.77%
+2026-06-07	28988	0	0.0%
+
+
+50. [HIGH] (а) Порахуйте по днях частку подій, де дата в event_date не збігається з датою в event_datetime. (б) З operating_system_version витягніть мажорну версію iOS (напр. 26, 18) і порахуйте кількість користувачів по кожній.
+
+a
+
+SELECT 
+    date(event_datetime) AS fact_date,
+    COUNT(*) AS total_events,
+    SUM(CASE 
+        WHEN event_date != date(event_datetime) THEN 1 
+        ELSE 0 
+    END) AS mismatched_events,
+    ROUND(
+        SUM(CASE 
+            WHEN event_date != date(event_datetime) THEN 1 
+            ELSE 0 
+        END) * 100.0 / COUNT(*), 
+        2
+    ) || '%' AS mismatch_rate
+
+FROM events
+GROUP BY date(event_datetime)
+ORDER BY fact_date DESC
+
+
+2026-06-07	1552773	0	0.0%
+2026-06-06	1359592	102580	7.54%
+2026-06-05	1216178	87973	7.23%
+2026-06-04	1475284	83453	5.66%
+2026-06-03	1382699	84131	6.08%
+2026-06-02	1388446	79008	5.69%
+2026-06-01	81991	81991	100.0%
+
+
+б
+
+SELECT 
+    CASE 
+        WHEN INSTR(operating_system_version, '.') > 0 
+        THEN SUBSTR(operating_system_version, 1, INSTR(operating_system_version, '.') - 1)
+        ELSE operating_system_version 
+    END AS ios_major_version,
+    COUNT(DISTINCT user_pseudo_id) AS unique_users
+FROM events
+WHERE 
+    operating_system_version IS NOT NULL 
+    AND operating_system_version != ''
+GROUP BY ios_major_version
+ORDER BY unique_users DESC
+
+iOS 26	187179
+iOS 18	40472
+iOS 17	7496
+iOS 16	6091
+iOS 15	3080
+iOS 12	125
+iOS 14	66
+iOS 13	5
+
+
+
+
+
+
+
